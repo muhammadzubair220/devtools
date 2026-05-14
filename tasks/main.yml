@@ -1,0 +1,32 @@
+---
+# =============================================================================
+# tasks/main.yml — Entry point for muhammadzubair220.devtools role
+# Installs Ansible, Terraform, and Docker on supported platforms
+# =============================================================================
+
+- name: Gather OS-specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}.yml"
+    - "{{ ansible_os_family }}.yml"
+    - "default.yml"
+  tags:
+    - ansible
+    - terraform
+    - docker
+
+- name: Install tools on Debian/Ubuntu-based systems
+  ansible.builtin.include_tasks: debian.yml
+  when: ansible_os_family == "Debian"
+  tags:
+    - ansible
+    - terraform
+    - docker
+
+- name: Install tools on RedHat-based systems
+  ansible.builtin.include_tasks: redhat.yml
+  when: ansible_os_family == "RedHat"
+  tags:
+    - ansible
+    - terraform
+    - docker

@@ -1,0 +1,3 @@
+---
+# OS-specific package manager for Debian/Ubuntu family
+devtools_pkg_mgr: apt

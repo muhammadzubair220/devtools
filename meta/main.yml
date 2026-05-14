@@ -1,0 +1,40 @@
+---
+galaxy_info:
+  role_name: devtools
+  author: muhammadzubair220
+  description: >
+    Installs Ansible, Terraform, and Docker on Ubuntu, Debian, Pop!_OS,
+    Linux Mint, and Rocky Linux (RedHat-based).
+  license: GPL-2.0-or-later
+  min_ansible_version: "2.15"
+  standalone: true
+
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+        - noble
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+    - name: EL
+      versions:
+        - "8"
+        - "9"
+
+  galaxy_tags:
+    - ansible
+    - terraform
+    - docker
+    - devtools
+    - ubuntu
+    - debian
+    - rocky
+    - infrastructure
+    - devops
+    - hashicorp
+    - containers
+
+dependencies: []

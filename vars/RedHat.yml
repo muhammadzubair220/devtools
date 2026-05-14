@@ -1,0 +1,3 @@
+---
+# OS-specific package manager for RedHat/Rocky family
+devtools_pkg_mgr: dnf

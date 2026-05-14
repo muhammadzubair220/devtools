@@ -1,0 +1,172 @@
+---
+# =============================================================================
+# tasks/redhat.yml — Install Ansible, Terraform, Docker on RedHat-based
+# Supports: Rocky Linux 8, 9
+# =============================================================================
+
+# ── Prerequisites ─────────────────────────────────────────────────────────────
+- name: "[RedHat] Install EPEL repository"
+  ansible.builtin.dnf:
+    name: epel-release
+    state: present
+  tags:
+    - ansible
+    - terraform
+    - docker
+
+- name: "[RedHat] Install prerequisite packages"
+  ansible.builtin.dnf:
+    name:
+      - python3
+      - python3-pip
+      - curl
+      - wget
+      - unzip
+      - gnupg2
+      - dnf-plugins-core
+    state: present
+    update_cache: true
+  tags:
+    - ansible
+    - terraform
+    - docker
+
+# ── Ansible ───────────────────────────────────────────────────────────────────
+- name: "[RedHat] Install Ansible via pip"
+  ansible.builtin.pip:
+    name: "ansible{{ '' if devtools_ansible_version == 'latest' else '==' + devtools_ansible_version }}"
+    state: "{{ 'latest' if devtools_ansible_version == 'latest' else 'present' }}"
+    executable: pip3
+  when:
+    - devtools_install_ansible | bool
+    - devtools_ansible_install_method == "pip"
+  tags: ansible
+
+- name: "[RedHat] Install Ansible via dnf"
+  ansible.builtin.dnf:
+    name: ansible
+    state: present
+  when:
+    - devtools_install_ansible | bool
+    - devtools_ansible_install_method == "package"
+  tags: ansible
+
+- name: "[RedHat] Verify Ansible installation"
+  ansible.builtin.command: ansible --version
+  register: _ansible_ver
+  changed_when: false
+  when: devtools_install_ansible | bool
+  tags: ansible
+
+- name: "[RedHat] Show Ansible version"
+  ansible.builtin.debug:
+    msg: "{{ _ansible_ver.stdout_lines[0] }}"
+  when: devtools_install_ansible | bool
+  tags: ansible
+
+# ── Terraform ─────────────────────────────────────────────────────────────────
+- name: "[RedHat] Add HashiCorp RPM repository"
+  ansible.builtin.get_url:
+    url: https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
+    dest: /etc/yum.repos.d/hashicorp.repo
+    mode: "0644"
+  when: devtools_install_terraform | bool
+  tags: terraform
+
+- name: "[RedHat] Install latest Terraform"
+  ansible.builtin.dnf:
+    name: terraform
+    state: latest  # noqa package-latest
+    update_cache: true
+  when:
+    - devtools_install_terraform | bool
+    - devtools_terraform_version == "latest"
+  tags: terraform
+
+- name: "[RedHat] Install specific Terraform version"
+  ansible.builtin.dnf:
+    name: "terraform-{{ devtools_terraform_version }}"
+    state: present
+    update_cache: true
+  when:
+    - devtools_install_terraform | bool
+    - devtools_terraform_version != "latest"
+  tags: terraform
+
+- name: "[RedHat] Verify Terraform installation"
+  ansible.builtin.command: terraform version
+  register: _terraform_ver
+  changed_when: false
+  when: devtools_install_terraform | bool
+  tags: terraform
+
+- name: "[RedHat] Show Terraform version"
+  ansible.builtin.debug:
+    msg: "{{ _terraform_ver.stdout_lines[0] }}"
+  when: devtools_install_terraform | bool
+  tags: terraform
+
+# ── Docker ────────────────────────────────────────────────────────────────────
+- name: "[RedHat] Remove old Docker packages"
+  ansible.builtin.dnf:
+    name:
+      - docker
+      - docker-client
+      - docker-client-latest
+      - docker-common
+      - docker-latest
+      - docker-logrotate
+      - docker-engine
+      - podman
+      - runc
+    state: absent
+  when: devtools_install_docker | bool
+  tags: docker
+
+- name: "[RedHat] Add Docker CE repository"
+  ansible.builtin.get_url:
+    url: https://download.docker.com/linux/centos/docker-ce.repo
+    dest: /etc/yum.repos.d/docker-ce.repo
+    mode: "0644"
+  when: devtools_install_docker | bool
+  tags: docker
+
+- name: "[RedHat] Install Docker CE + Compose plugin"
+  ansible.builtin.dnf:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-compose-plugin
+    state: present
+    update_cache: true
+  when:
+    - devtools_install_docker | bool
+    - devtools_docker_compose_plugin | bool
+  tags: docker
+
+- name: "[RedHat] Install Docker CE (without Compose plugin)"
+  ansible.builtin.dnf:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+    state: present
+    update_cache: true
+  when:
+    - devtools_install_docker | bool
+    - not devtools_docker_compose_plugin | bool
+  tags: docker
+
+- name: "[RedHat] Verify Docker installation"
+  ansible.builtin.command: docker --version
+  register: _docker_ver
+  changed_when: false
+  when: devtools_install_docker | bool
+  tags: docker
+
+- name: "[RedHat] Show Docker version"
+  ansible.builtin.debug:
+    msg: "{{ _docker_ver.stdout }}"
+  when: devtools_install_docker | bool
+  tags: docker

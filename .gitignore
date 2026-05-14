@@ -1,0 +1,44 @@
+# Ansible
+*.retry
+*.pem
+*.key
+*.log
+.vault_pass
+vault_password_file
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+
+# Molecule / Testing
+.molecule/
+tests/output/
+.cache/
+
+# IDE
+.vscode/
+.vscode-server/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
+.terraform.d/
+
+# Collection build artifacts
+*.tar.gz

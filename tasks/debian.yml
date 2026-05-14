@@ -1,0 +1,214 @@
+---
+# =============================================================================
+# tasks/debian.yml — Install Ansible, Terraform, Docker on Debian/Ubuntu-based
+# Supports: Ubuntu, Debian, Pop!_OS, Linux Mint
+# =============================================================================
+
+# ── Prerequisites ─────────────────────────────────────────────────────────────
+- name: "[Debian] Install prerequisite packages"
+  ansible.builtin.apt:
+    name:
+      - ca-certificates
+      - curl
+      - gnupg
+      - wget
+      - unzip
+      - software-properties-common
+      - python3
+      - python3-pip
+      - lsb-release
+    state: present
+    update_cache: true
+  tags:
+    - ansible
+    - terraform
+    - docker
+
+# ── Ansible ───────────────────────────────────────────────────────────────────
+- name: "[Debian] Install Ansible via pip"
+  ansible.builtin.pip:
+    name: "ansible{{ '' if devtools_ansible_version == 'latest' else '==' + devtools_ansible_version }}"
+    state: "{{ 'latest' if devtools_ansible_version == 'latest' else 'present' }}"
+    executable: pip3
+  when:
+    - devtools_install_ansible | bool
+    - devtools_ansible_install_method == "pip"
+  tags: ansible
+
+- name: "[Debian] Add Ansible PPA (Ubuntu/Pop!_OS/Mint)"
+  ansible.builtin.apt_repository:
+    repo: ppa:ansible/ansible
+    state: present
+    update_cache: true
+  when:
+    - devtools_install_ansible | bool
+    - devtools_ansible_install_method == "package"
+    - ansible_distribution in ["Ubuntu", "Pop!_OS", "Linuxmint"]
+  tags: ansible
+
+- name: "[Debian] Install Ansible via apt"
+  ansible.builtin.apt:
+    name: ansible
+    state: present
+    update_cache: true
+  when:
+    - devtools_install_ansible | bool
+    - devtools_ansible_install_method == "package"
+  tags: ansible
+
+- name: "[Debian] Verify Ansible installation"
+  ansible.builtin.command: ansible --version
+  register: _ansible_ver
+  changed_when: false
+  when: devtools_install_ansible | bool
+  tags: ansible
+
+- name: "[Debian] Show Ansible version"
+  ansible.builtin.debug:
+    msg: "{{ _ansible_ver.stdout_lines[0] }}"
+  when: devtools_install_ansible | bool
+  tags: ansible
+
+# ── Terraform ─────────────────────────────────────────────────────────────────
+- name: "[Debian] Add HashiCorp GPG key"
+  ansible.builtin.get_url:
+    url: https://apt.releases.hashicorp.com/gpg
+    dest: /usr/share/keyrings/hashicorp-archive-keyring.asc
+    mode: "0644"
+    force: true
+  when: devtools_install_terraform | bool
+  tags: terraform
+
+- name: "[Debian] Add HashiCorp apt repository"
+  ansible.builtin.apt_repository:
+    repo: >-
+      deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.asc]
+      https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main
+    state: present
+    filename: hashicorp
+    update_cache: true
+  when: devtools_install_terraform | bool
+  tags: terraform
+
+- name: "[Debian] Install latest Terraform"
+  ansible.builtin.apt:
+    name: terraform
+    state: latest  # noqa package-latest
+    update_cache: true
+  when:
+    - devtools_install_terraform | bool
+    - devtools_terraform_version == "latest"
+  tags: terraform
+
+- name: "[Debian] Install specific Terraform version"
+  ansible.builtin.apt:
+    name: "terraform={{ devtools_terraform_version }}-*"
+    state: present
+    update_cache: true
+  when:
+    - devtools_install_terraform | bool
+    - devtools_terraform_version != "latest"
+  tags: terraform
+
+- name: "[Debian] Verify Terraform installation"
+  ansible.builtin.command: terraform version
+  register: _terraform_ver
+  changed_when: false
+  when: devtools_install_terraform | bool
+  tags: terraform
+
+- name: "[Debian] Show Terraform version"
+  ansible.builtin.debug:
+    msg: "{{ _terraform_ver.stdout_lines[0] }}"
+  when: devtools_install_terraform | bool
+  tags: terraform
+
+# ── Docker ────────────────────────────────────────────────────────────────────
+- name: "[Debian] Remove old Docker packages"
+  ansible.builtin.apt:
+    name:
+      - docker
+      - docker-engine
+      - docker.io
+      - containerd
+      - runc
+    state: absent
+  when: devtools_install_docker | bool
+  tags: docker
+
+- name: "[Debian] Create Docker keyring directory"
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: "0755"
+  when: devtools_install_docker | bool
+  tags: docker
+
+- name: "[Debian] Add Docker GPG key"
+  ansible.builtin.get_url:
+    url: "https://download.docker.com/linux/{{ _docker_distro }}/gpg"
+    dest: /etc/apt/keyrings/docker.asc
+    mode: "0644"
+    force: true
+  vars:
+    _docker_distro: >-
+      {{ 'ubuntu' if ansible_distribution in ['Pop!_OS', 'Linuxmint'] else ansible_distribution | lower }}
+  when: devtools_install_docker | bool
+  tags: docker
+
+- name: "[Debian] Add Docker apt repository"
+  ansible.builtin.apt_repository:
+    repo: >-
+      deb [arch={{ ansible_architecture | replace('x86_64', 'amd64') }}
+      signed-by=/etc/apt/keyrings/docker.asc]
+      https://download.docker.com/linux/{{ _docker_distro }} {{ _docker_release }} stable
+    state: present
+    filename: docker
+    update_cache: true
+  vars:
+    _docker_distro: >-
+      {{ 'ubuntu' if ansible_distribution in ['Pop!_OS', 'Linuxmint'] else ansible_distribution | lower }}
+    _docker_release: >-
+      {{ 'jammy' if ansible_distribution in ['Pop!_OS', 'Linuxmint'] else ansible_distribution_release }}
+  when: devtools_install_docker | bool
+  tags: docker
+
+- name: "[Debian] Install Docker CE + Compose plugin"
+  ansible.builtin.apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-compose-plugin
+    state: present
+    update_cache: true
+  when:
+    - devtools_install_docker | bool
+    - devtools_docker_compose_plugin | bool
+  tags: docker
+
+- name: "[Debian] Install Docker CE (without Compose plugin)"
+  ansible.builtin.apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+    state: present
+    update_cache: true
+  when:
+    - devtools_install_docker | bool
+    - not devtools_docker_compose_plugin | bool
+  tags: docker
+
+- name: "[Debian] Verify Docker installation"
+  ansible.builtin.command: docker --version
+  register: _docker_ver
+  changed_when: false
+  when: devtools_install_docker | bool
+  tags: docker
+
+- name: "[Debian] Show Docker version"
+  ansible.builtin.debug:
+    msg: "{{ _docker_ver.stdout }}"
+  when: devtools_install_docker | bool
+  tags: docker

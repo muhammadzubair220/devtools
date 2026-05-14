@@ -1,0 +1,26 @@
+---
+# =============================================================================
+# defaults/main.yml — Default variables for muhammadzubair220.devtools role
+# =============================================================================
+
+# ── Which tools to install ────────────────────────────────────────────────────
+devtools_install_ansible: true
+devtools_install_terraform: true
+devtools_install_docker: true
+
+# ── Ansible settings ──────────────────────────────────────────────────────────
+# Install method: 'pip' or 'package'
+devtools_ansible_install_method: pip
+# Version: 'latest' or e.g. '2.17.0'
+devtools_ansible_version: latest
+
+# ── Terraform settings ────────────────────────────────────────────────────────
+# Version: 'latest' or e.g. '1.8.0'
+devtools_terraform_version: latest
+
+# ── Docker settings ───────────────────────────────────────────────────────────
+# Install Docker Compose plugin (docker compose)
+devtools_docker_compose_plugin: true
+# List of OS users to add to the docker group
+# Example: devtools_docker_users: ["ubuntu", "deploy"]
+devtools_docker_users: []
