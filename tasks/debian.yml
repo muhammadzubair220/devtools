@@ -71,6 +71,17 @@
   tags: ansible
 
 # ── Terraform ─────────────────────────────────────────────────────────────────
+- name: "[Debian] Wait for apt lock to be released"
+  ansible.builtin.shell: |
+    while fuser /var/lib/dpkg/lock-frontend /var/lib/apt/lists/lock /var/cache/apt/archives/lock >/dev/null 2>&1; do
+      sleep 2
+    done
+  changed_when: false
+  when: devtools_install_terraform | bool or devtools_install_docker | bool
+  tags:
+    - terraform
+    - docker
+
 - name: "[Debian] Add HashiCorp GPG key"
   ansible.builtin.get_url:
     url: https://apt.releases.hashicorp.com/gpg
