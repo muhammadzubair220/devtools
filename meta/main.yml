@@ -7,7 +7,6 @@ galaxy_info:
     Linux Mint, and Rocky Linux (RedHat-based).
   license: GPL-2.0-or-later
   min_ansible_version: "2.15"
-  standalone: true
 
   platforms:
     - name: Ubuntu
