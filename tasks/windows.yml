@@ -1,0 +1,141 @@
+---
+# =============================================================================
+# tasks/windows.yml — Install Ansible, Terraform, Docker on Windows
+# Supports: Windows Server 2019/2022, Windows 10/11
+# Uses: Chocolatey (Windows package manager)
+# Requirements: WinRM must be enabled on target Windows hosts
+# =============================================================================
+
+# ── Chocolatey Bootstrap ──────────────────────────────────────────────────────
+- name: "[Windows] Ensure Chocolatey is installed"
+  ansible.windows.win_shell: |
+    if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
+      Set-ExecutionPolicy Bypass -Scope Process -Force
+      [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+      Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+    } else {
+      Write-Output "Chocolatey already installed"
+    }
+  changed_when: false
+  tags:
+    - ansible
+    - terraform
+    - docker
+
+- name: "[Windows] Upgrade Chocolatey to latest"
+  chocolatey.chocolatey.win_chocolatey:
+    name: chocolatey
+    state: latest
+  tags:
+    - ansible
+    - terraform
+    - docker
+
+# ── Python + Ansible ──────────────────────────────────────────────────────────
+- name: "[Windows] Install Python 3 via Chocolatey"
+  chocolatey.chocolatey.win_chocolatey:
+    name: python3
+    state: present
+  when: devtools_install_ansible | bool
+  tags: ansible
+
+- name: "[Windows] Refresh environment variables after Python install"
+  ansible.windows.win_shell: |
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+  changed_when: false
+  when: devtools_install_ansible | bool
+  tags: ansible
+
+- name: "[Windows] Install Ansible via pip (latest)"
+  ansible.windows.win_shell: |
+    pip install --upgrade ansible
+  when:
+    - devtools_install_ansible | bool
+    - devtools_ansible_version == "latest"
+  tags: ansible
+
+- name: "[Windows] Install specific Ansible version via pip"
+  ansible.windows.win_shell: |
+    pip install ansible=={{ devtools_ansible_version }}
+  when:
+    - devtools_install_ansible | bool
+    - devtools_ansible_version != "latest"
+  tags: ansible
+
+- name: "[Windows] Verify Ansible installation"
+  ansible.windows.win_shell: ansible --version
+  register: _win_ansible_ver
+  changed_when: false
+  when: devtools_install_ansible | bool
+  tags: ansible
+
+- name: "[Windows] Show Ansible version"
+  ansible.builtin.debug:
+    msg: "{{ _win_ansible_ver.stdout_lines[0] }}"
+  when: devtools_install_ansible | bool
+  tags: ansible
+
+# ── Terraform ─────────────────────────────────────────────────────────────────
+- name: "[Windows] Install latest Terraform via Chocolatey"
+  chocolatey.chocolatey.win_chocolatey:
+    name: terraform
+    state: latest
+  when:
+    - devtools_install_terraform | bool
+    - devtools_terraform_version == "latest"
+  tags: terraform
+
+- name: "[Windows] Install specific Terraform version via Chocolatey"
+  chocolatey.chocolatey.win_chocolatey:
+    name: terraform
+    version: "{{ devtools_terraform_version }}"
+    state: present
+  when:
+    - devtools_install_terraform | bool
+    - devtools_terraform_version != "latest"
+  tags: terraform
+
+- name: "[Windows] Verify Terraform installation"
+  ansible.windows.win_shell: terraform version
+  register: _win_terraform_ver
+  changed_when: false
+  when: devtools_install_terraform | bool
+  tags: terraform
+
+- name: "[Windows] Show Terraform version"
+  ansible.builtin.debug:
+    msg: "{{ _win_terraform_ver.stdout_lines[0] }}"
+  when: devtools_install_terraform | bool
+  tags: terraform
+
+# ── Docker Desktop ────────────────────────────────────────────────────────────
+- name: "[Windows] Install Docker Desktop via Chocolatey"
+  chocolatey.chocolatey.win_chocolatey:
+    name: docker-desktop
+    state: present
+  when:
+    - devtools_install_docker | bool
+    - devtools_docker_windows_edition == "desktop"
+  tags: docker
+
+- name: "[Windows] Install Docker Engine (no GUI) via Chocolatey"
+  chocolatey.chocolatey.win_chocolatey:
+    name: docker-engine
+    state: present
+  when:
+    - devtools_install_docker | bool
+    - devtools_docker_windows_edition == "engine"
+  tags: docker
+
+- name: "[Windows] Verify Docker installation"
+  ansible.windows.win_shell: docker --version
+  register: _win_docker_ver
+  changed_when: false
+  when: devtools_install_docker | bool
+  tags: docker
+
+- name: "[Windows] Show Docker version"
+  ansible.builtin.debug:
+    msg: "{{ _win_docker_ver.stdout }}"
+  when: devtools_install_docker | bool
+  tags: docker

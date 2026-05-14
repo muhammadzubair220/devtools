@@ -9,7 +9,7 @@ devtools_install_terraform: true
 devtools_install_docker: true
 
 # ── Ansible settings ──────────────────────────────────────────────────────────
-# Install method: 'pip' or 'package'
+# Install method: 'pip' or 'package' (Linux only; Windows always uses pip)
 devtools_ansible_install_method: pip
 # Version: 'latest' or e.g. '2.17.0'
 devtools_ansible_version: latest
@@ -18,9 +18,13 @@ devtools_ansible_version: latest
 # Version: 'latest' or e.g. '1.8.0'
 devtools_terraform_version: latest
 
-# ── Docker settings ───────────────────────────────────────────────────────────
+# ── Docker settings (Linux) ───────────────────────────────────────────────────
 # Install Docker Compose plugin (docker compose)
 devtools_docker_compose_plugin: true
-# List of OS users to add to the docker group
+# List of OS users to add to the docker group (Linux only)
 # Example: devtools_docker_users: ["ubuntu", "deploy"]
 devtools_docker_users: []
+
+# ── Docker settings (Windows) ─────────────────────────────────────────────────
+# Windows Docker edition: 'desktop' (Docker Desktop GUI) or 'engine' (CLI only)
+devtools_docker_windows_edition: desktop

@@ -30,3 +30,11 @@
     - ansible
     - terraform
     - docker
+
+- name: Install tools on Windows systems
+  ansible.builtin.include_tasks: windows.yml
+  when: ansible_facts['os_family'] == "Windows"
+  tags:
+    - ansible
+    - terraform
+    - docker
