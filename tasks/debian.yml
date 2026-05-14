@@ -30,6 +30,7 @@
     name: "ansible{{ '' if devtools_ansible_version == 'latest' else '==' + devtools_ansible_version }}"
     state: "{{ 'latest' if devtools_ansible_version == 'latest' else 'present' }}"
     executable: pip3
+    extra_args: "--break-system-packages"
   when:
     - devtools_install_ansible | bool
     - devtools_ansible_install_method == "pip"
@@ -43,7 +44,7 @@
   when:
     - devtools_install_ansible | bool
     - devtools_ansible_install_method == "package"
-    - ansible_distribution in ["Ubuntu", "Pop!_OS", "Linuxmint"]
+    - ansible_facts['distribution'] in ["Ubuntu", "Pop!_OS", "Linuxmint"]
   tags: ansible
 
 - name: "[Debian] Install Ansible via apt"
@@ -83,7 +84,7 @@
   ansible.builtin.apt_repository:
     repo: >-
       deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.asc]
-      https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main
+      https://apt.releases.hashicorp.com {{ ansible_facts['distribution_release'] }} main
     state: present
     filename: hashicorp
     update_cache: true
@@ -152,14 +153,14 @@
     force: true
   vars:
     _docker_distro: >-
-      {{ 'ubuntu' if ansible_distribution in ['Pop!_OS', 'Linuxmint'] else ansible_distribution | lower }}
+      {{ 'ubuntu' if ansible_facts['distribution'] in ['Pop!_OS', 'Linuxmint'] else ansible_facts['distribution'] | lower }}
   when: devtools_install_docker | bool
   tags: docker
 
 - name: "[Debian] Add Docker apt repository"
   ansible.builtin.apt_repository:
     repo: >-
-      deb [arch={{ ansible_architecture | replace('x86_64', 'amd64') }}
+      deb [arch={{ ansible_facts['architecture'] | replace('x86_64', 'amd64') }}
       signed-by=/etc/apt/keyrings/docker.asc]
       https://download.docker.com/linux/{{ _docker_distro }} {{ _docker_release }} stable
     state: present
@@ -167,9 +168,9 @@
     update_cache: true
   vars:
     _docker_distro: >-
-      {{ 'ubuntu' if ansible_distribution in ['Pop!_OS', 'Linuxmint'] else ansible_distribution | lower }}
+      {{ 'ubuntu' if ansible_facts['distribution'] in ['Pop!_OS', 'Linuxmint'] else ansible_facts['distribution'] | lower }}
     _docker_release: >-
-      {{ 'jammy' if ansible_distribution in ['Pop!_OS', 'Linuxmint'] else ansible_distribution_release }}
+      {{ 'jammy' if ansible_facts['distribution'] in ['Pop!_OS', 'Linuxmint'] else ansible_facts['distribution_release'] }}
   when: devtools_install_docker | bool
   tags: docker
 
